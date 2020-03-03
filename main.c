@@ -2,6 +2,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
 
 #define QR_QUERY (uint16_t)0
 #define QR_RESPONSE (uint16_t)1
@@ -69,8 +72,6 @@ void set_field(unsigned char *arr, uint16_t num)
 {
     arr[1] = num;
     arr[0] = num >> 8;
-
-    return arr;
 }
 
 void set_arr(unsigned char *to, unsigned char from[2])
@@ -79,11 +80,24 @@ void set_arr(unsigned char *to, unsigned char from[2])
     *(to + 1) = from[1];
 }
 
+void pretty_print_like_blog_post(unsigned char *buf, size_t print_count)
+{
+        for(int i = 0; i < print_count; i += 2 )
+    {
+        if((print_count % 2 != 0) && i == (print_count - 1))
+        {
+            printf("%02hhX\n", buf[i]);
+            continue;
+        }
+        printf("%02hhX %02hhX\n", buf[i], buf[i + 1]);
+    }
+}
+
 int main()
 {
     unsigned char out_buf[1024] = {0};
     unsigned char in_buf[1024] = {0};
-    char str[] = "google.com";
+    char str[] = "example.com";
 
     struct dns_header header;
     memset(&header, 0, sizeof(header));
@@ -133,16 +147,26 @@ int main()
     memcpy(out_buf, header_a, 12);
     memcpy(out_buf + 12, message_a, offset);
 
-    for(int i = 0; i < offset + 12; i += 2 )
-    {
-        if((offset % 2 != 0) && i == (offset - 1))
-        {
-            printf("%02hhX\n", out_buf[i]);
-            continue;
-        }
-        printf("%02hhX %02hhX\n", out_buf[i], out_buf[i + 1]);
-    }
+    pretty_print_like_blog_post(out_buf, offset + 12);
+
+    struct sockaddr_in dns_serv;
+    struct sockaddr_in resp_addr;
+    unsigned int resp_addr_size = sizeof(resp_addr);
+
+    int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    memset(&dns_serv, 0, sizeof(dns_serv));
+    dns_serv.sin_family = AF_INET;
+    dns_serv.sin_addr.s_addr = inet_addr("8.8.8.8");
+    dns_serv.sin_port = htons(53);
+
+    sendto(sock, out_buf, (offset + 12), 0, (struct sockaddr *)&dns_serv, sizeof(dns_serv));
+    int bytes_returned = recvfrom(sock, in_buf, 1024, 0, (struct sockaddr *) &resp_addr, &resp_addr_size);
+
+    printf("rec'd size: %i\n", bytes_returned);
+    pretty_print_like_blog_post(in_buf, bytes_returned);
 
     free(message_a);
+    
     return 0;
 }
