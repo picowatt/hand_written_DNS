@@ -40,8 +40,8 @@ struct dns_question
 {
     unsigned char *qname;
     int qname_len; 
-    unsigned char qtype[3];
-    unsigned char qclass[3];
+    unsigned char qtype[2];
+    unsigned char qclass[2];
 };
 
 #define QTYPE_A (uint16_t)1
@@ -82,7 +82,7 @@ void set_arr(unsigned char *to, unsigned char from[2])
 
 void pretty_print_like_blog_post(unsigned char *buf, size_t print_count)
 {
-        for(int i = 0; i < print_count; i += 2 )
+    for(int i = 0; i < print_count; i += 2 )
     {
         if((print_count % 2 != 0) && i == (print_count - 1))
         {
@@ -167,6 +167,6 @@ int main()
     pretty_print_like_blog_post(in_buf, bytes_returned);
 
     free(message_a);
-    
+
     return 0;
 }
