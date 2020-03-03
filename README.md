@@ -1,0 +1,1 @@
+A freewheeling C implementation of this blog post https://routley.io/posts/hand-writing-dns-messages/
